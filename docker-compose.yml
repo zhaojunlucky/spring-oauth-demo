@@ -1,0 +1,31 @@
+version: '3'
+services:
+  oauth-server:
+    image: eclipse-temurin:11-jdk
+    working_dir: /app
+    volumes:
+      - ./oauth-server:/app
+    ports:
+      - "8080:8080"
+    command: >
+      sh -c "
+        echo 'Building Spring Boot application...' &&
+        ./gradlew bootRun
+      "
+  
+  nodejs-client:
+    image: node:16
+    working_dir: /app
+    volumes:
+      - ./nodejs-client:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - oauth-server
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        npm install &&
+        echo 'Starting Node.js client...' &&
+        npm start
+      "

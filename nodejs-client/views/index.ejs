@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 Client Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 10px;
+            overflow: auto;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>OAuth2 Client Demo</h1>
+    
+    <div class="container">
+        <h2>Authentication</h2>
+        <% if (token) { %>
+            <p>You are authenticated!</p>
+            <h3>Access Token</h3>
+            <pre><%= JSON.stringify(token, null, 2) %></pre>
+            <% if (token.refresh_token) { %>
+                <a href="/refresh-token" class="btn">Refresh Token</a>
+            <% } %>
+            <a href="/logout" class="btn">Logout</a>
+            
+            <% if (tokenInfo) { %>
+                <h3>Token Information</h3>
+                <pre><%= JSON.stringify(tokenInfo, null, 2) %></pre>
+            <% } %>
+        <% } else { %>
+            <p>You are not authenticated. Please login:</p>
+            <a href="/authorize" class="btn">Login with OAuth2</a>
+            <p>This will redirect you to the authorization server for authentication.</p>
+        <% } %>
+    </div>
+    
+    <div class="container">
+        <h2>API Access</h2>
+        <% if (token) { %>
+            <a href="/user-data" class="btn">Get Protected User Data</a>
+            <p>This will use your access token to request protected data from the resource server.</p>
+        <% } else { %>
+            <p>Login first to access protected resources</p>
+        <% } %>
+        <a href="/public-data" class="btn">Get Public Data</a>
+        <p>This endpoint doesn't require authentication.</p>
+    </div>
+    
+    <% if (userData) { %>
+    <div class="container">
+        <h2>User Data</h2>
+        <pre><%= JSON.stringify(userData, null, 2) %></pre>
+    </div>
+    <% } %>
+</body>
+</html>

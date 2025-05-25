@@ -5,21 +5,20 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
@@ -27,11 +26,13 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.example.oauthserver.repository.JpaRegisteredClientRepository;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
 public class AuthServerConfig {
@@ -44,28 +45,65 @@ public class AuthServerConfig {
             .oidc(Customizer.withDefaults());
         return http.formLogin(Customizer.withDefaults()).build();
     }
-
+    
+    /**
+     * Initialize sample clients in the database
+     */
     @Bean
-    public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("nodejs-client")
-            .clientSecret(passwordEncoder.encode("client-secret"))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-            .redirectUri("http://localhost:3000/callback")
-            .scope(OidcScopes.OPENID)
-            .scope("read")
-            .scope("write")
-            .tokenSettings(TokenSettings.builder()
-                .accessTokenTimeToLive(Duration.ofHours(1))
-                .refreshTokenTimeToLive(Duration.ofDays(1))
-                .build())
-            .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-            .build();
-
-        return new InMemoryRegisteredClientRepository(registeredClient);
+    public ApplicationRunner clientsInitializer(
+            JpaRegisteredClientRepository clientRepository,
+            PasswordEncoder passwordEncoder) {
+        return args -> {
+            // Check if clients already exist
+            if (clientRepository.findByClientId("nodejs-client") == null) {
+                // Create and save the nodejs-client
+                RegisteredClient nodejsClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId("nodejs-client")
+                    .clientSecret(passwordEncoder.encode("client-secret"))
+                    .clientName("Node.js Client")
+                    .clientIdIssuedAt(Instant.now())
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                    .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                    .redirectUri("http://localhost:3000/callback")
+                    .scope(OidcScopes.OPENID)
+                    .scope("read")
+                    .scope("write")
+                    .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(1))
+                        .refreshTokenTimeToLive(Duration.ofDays(1))
+                        .build())
+                    .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                    .build();
+                
+                clientRepository.save(nodejsClient);
+            }
+            
+            // Add angular-client if it doesn't exist
+            if (clientRepository.findByClientId("angular-client") == null) {
+                RegisteredClient angularClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId("angular-client")
+                    .clientSecret(passwordEncoder.encode("angular-secret"))
+                    .clientName("Angular Client")
+                    .clientIdIssuedAt(Instant.now())
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                    .redirectUri("http://localhost:4200/callback")
+                    .scope(OidcScopes.OPENID)
+                    .scope("read")
+                    .scope("write")
+                    .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(1))
+                        .refreshTokenTimeToLive(Duration.ofDays(1))
+                        .build())
+                    .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                    .build();
+                
+                clientRepository.save(angularClient);
+            }
+        };
     }
 
     @Bean

@@ -1,0 +1,58 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Login</mat-card-title>
+      <mat-card-subtitle *ngIf="oauthParams.client_id">
+        Sign in to access {{ oauthParams.client_id }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Error message display -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Login form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" *ngIf="!errorMessage">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" placeholder="Enter your username" required>
+          <mat-error *ngIf="isFieldInvalid('username')">
+            Username is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="Enter your password" required>
+          <mat-error *ngIf="isFieldInvalid('password')">
+            Password is required
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Scope information -->
+        <div *ngIf="oauthParams.scope" class="scope-info">
+          <p>This application is requesting access to:</p>
+          <ul>
+            <li *ngFor="let scope of oauthParams.scope.split(' ')">
+              {{ scope }}
+            </li>
+          </ul>
+        </div>
+      </form>
+
+      <!-- Loading spinner -->
+      <div *ngIf="isLoading" class="spinner-container">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <button mat-button (click)="cancelLogin()" [disabled]="isLoading">Cancel</button>
+      <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="isLoading || !!errorMessage">
+        Login
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

@@ -21,6 +21,8 @@ public class ResourceServerConfig {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/public").permitAll()
                 .requestMatchers("/api/auth/login").permitAll()
+                // Add endpoint for validating OAuth parameters
+                .requestMatchers("/api/auth/validate-oauth-params").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

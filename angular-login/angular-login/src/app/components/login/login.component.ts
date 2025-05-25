@@ -50,10 +50,29 @@ export class LoginComponent implements OnInit {
     // Get OAuth parameters from URL
     this.oauthParams = this.authService.getOAuthParams();
 
-    // Validate required OAuth parameters
+    // First do basic client-side validation
     if (!this.oauthParams.client_id || !this.oauthParams.redirect_uri) {
       this.errorMessage = 'Invalid OAuth request. Missing required parameters.';
+      return;
     }
+
+    // Then validate with the backend
+    this.isLoading = true;
+    this.authService.validateOAuthParams(this.oauthParams).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (!response.valid) {
+          this.errorMessage = response.error_description || 'Invalid OAuth parameters';
+          // Optionally redirect back to client with error
+          // this.authService.redirectToClient(false, undefined, response.error || 'invalid_request');
+        }
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage = 'Failed to validate OAuth parameters';
+        console.error('OAuth validation error:', error);
+      }
+    });
   }
 
   onSubmit(): void {

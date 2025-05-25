@@ -22,20 +22,20 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    @Order(2)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/public").permitAll()
-                .requestMatchers("/api/auth/login").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(Customizer.withDefaults());
-        return http.build();
-    }
+    // @Bean
+    // @Order(2)
+    // public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    //     http
+    //         // This filter chain handles non-API paths
+    //         .securityMatcher(request -> !request.getRequestURI().startsWith("/api/"))
+    //         .cors(Customizer.withDefaults())
+    //         .csrf(csrf -> csrf.disable())
+    //         .authorizeHttpRequests(authorize -> authorize
+    //             .anyRequest().authenticated()
+    //         )
+    //         .formLogin(Customizer.withDefaults());
+    //     return http.build();
+    // }
 
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {

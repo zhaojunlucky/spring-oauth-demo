@@ -3,6 +3,7 @@ package com.example.oauthserver.controller;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -75,6 +78,81 @@ public class AuthController {
      */
     private String generateAuthorizationCode() {
         return UUID.randomUUID().toString();
+    }
+    
+    /**
+     * Validate OAuth parameters
+     * @param clientId The client ID
+     * @param redirectUri The redirect URI
+     * @param responseType The response type
+     * @return ResponseEntity with validation result
+     */
+    @GetMapping("/validate-oauth-params")
+    public ResponseEntity<?> validateOAuthParams(
+            @RequestParam("client_id") String clientId,
+            @RequestParam("redirect_uri") String redirectUri,
+            @RequestParam(value = "response_type", defaultValue = "code") String responseType) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        // TODO: In a production environment, you would validate against registered clients in a database
+        // For this demo, we'll use a simple validation
+        boolean isValid = isValidClientId(clientId) && isValidRedirectUri(clientId, redirectUri);
+        
+        if (isValid) {
+            response.put("valid", true);
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("valid", false);
+            response.put("error", "invalid_request");
+            response.put("error_description", "Invalid client_id or redirect_uri");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
+    /**
+     * Validate client ID against registered clients
+     * @param clientId The client ID to validate
+     * @return true if valid, false otherwise
+     */
+    private boolean isValidClientId(String clientId) {
+        // In a real application, this would check against a database of registered clients
+        // For demo purposes, we'll accept any non-empty client ID
+        return clientId != null && !clientId.trim().isEmpty();
+        // Uncomment for stricter validation with specific client IDs
+        // return "client1".equals(clientId) || "client2".equals(clientId) || "angular-client".equals(clientId);
+    }
+    
+    /**
+     * Validate redirect URI for a given client ID
+     * @param clientId The client ID
+     * @param redirectUri The redirect URI to validate
+     * @return true if valid, false otherwise
+     */
+    private boolean isValidRedirectUri(String clientId, String redirectUri) {
+        // In a real application, this would check against registered redirect URIs for the client
+        // For demo/development purposes, we'll accept any localhost URI
+        if (redirectUri != null && (redirectUri.startsWith("http://localhost:") || 
+                                   redirectUri.startsWith("https://localhost:"))) {
+            return true;
+        }
+        
+        // For production, uncomment and use a strict validation approach like this:
+        /*
+        Map<String, String[]> validRedirectUris = new HashMap<>();
+        validRedirectUris.put("client1", new String[] {"http://localhost:3000/callback"});
+        validRedirectUris.put("client2", new String[] {"http://localhost:8080/callback"});
+        validRedirectUris.put("angular-client", new String[] {"http://localhost:4200/callback"});
+        
+        String[] allowedUris = validRedirectUris.getOrDefault(clientId, new String[0]);
+        for (String uri : allowedUris) {
+            if (redirectUri.startsWith(uri)) {
+                return true;
+            }
+        }
+        */
+        
+        return false;
     }
     
     /**

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
-import { LoginRequest, LoginResponse, OAuthParams } from '../models/auth.model';
+import { LoginRequest, LoginResponse, OAuthParams, OAuthValidationResponse } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -53,6 +53,35 @@ export class AuthService {
     });
 
     return params;
+  }
+  
+  /**
+   * Validate OAuth parameters with the backend
+   * @param params OAuth parameters to validate
+   * @returns Observable with validation result
+   */
+  validateOAuthParams(params: OAuthParams): Observable<OAuthValidationResponse> {
+    // Create HTTP parameters from OAuth parameters
+    let httpParams = new HttpParams()
+      .set('client_id', params.client_id)
+      .set('redirect_uri', params.redirect_uri)
+      .set('response_type', params.response_type);
+    
+    if (params.scope) {
+      httpParams = httpParams.set('scope', params.scope);
+    }
+    
+    return this.http.get<OAuthValidationResponse>(`${this.apiUrl}/api/auth/validate-oauth-params`, { params: httpParams })
+      .pipe(
+        catchError(error => {
+          console.error('OAuth validation error:', error);
+          return of({
+            valid: false,
+            error: error.error?.error || 'invalid_request',
+            error_description: error.error?.error_description || 'Failed to validate OAuth parameters'
+          });
+        })
+      );
   }
 
   /**

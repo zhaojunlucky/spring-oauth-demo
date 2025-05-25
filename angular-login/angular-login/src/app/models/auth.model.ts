@@ -18,3 +18,9 @@ export interface OAuthParams {
   state: string;
   [key: string]: string;
 }
+
+export interface OAuthValidationResponse {
+  valid: boolean;
+  error?: string;
+  error_description?: string;
+}

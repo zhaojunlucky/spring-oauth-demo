@@ -2,16 +2,15 @@ package com.example.oauthserver.controller;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,11 +35,13 @@ public class AuthController {
     
     /**
      * Login endpoint for the Angular login app
+     * This endpoint validates credentials and establishes authentication in Spring Security context
      * @param loginRequest The login credentials
+     * @param request HTTP request to access session
      * @return ResponseEntity with login result
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         try {
             // Validate username and password
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
@@ -49,12 +50,19 @@ public class AuthController {
                 throw new BadCredentialsException("Invalid username or password");
             }
             
-            // Authentication successful, generate authorization code
-            String authorizationCode = generateAuthorizationCode();
+            // Create authentication token and set in security context
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             
+            // Store authentication in session so OAuth2 authorize endpoint can access it
+            HttpSession session = request.getSession(true);
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            
+            // Authentication successful
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("code", authorizationCode);
+            response.put("message", "Authentication successful");
             
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {
@@ -72,13 +80,6 @@ public class AuthController {
         }
     }
     
-    /**
-     * Generate a random authorization code
-     * @return Random UUID as authorization code
-     */
-    private String generateAuthorizationCode() {
-        return UUID.randomUUID().toString();
-    }
     
     /**
      * Validate OAuth parameters

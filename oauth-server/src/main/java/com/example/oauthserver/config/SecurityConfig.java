@@ -22,20 +22,23 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // @Bean
-    // @Order(2)
-    // public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-    //     http
-    //         // This filter chain handles non-API paths
-    //         .securityMatcher(request -> !request.getRequestURI().startsWith("/api/"))
-    //         .cors(Customizer.withDefaults())
-    //         .csrf(csrf -> csrf.disable())
-    //         .authorizeHttpRequests(authorize -> authorize
-    //             .anyRequest().authenticated()
-    //         )
-    //         .formLogin(Customizer.withDefaults());
-    //     return http.build();
-    // }
+    @Bean
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            // This filter chain handles OAuth2 authorization requests
+            .securityMatcher(request -> !request.getRequestURI().startsWith("/api/"))
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/oauth2/**").permitAll() // Allow OAuth2 endpoints
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED)
+            );
+        return http.build();
+    }
 
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
@@ -53,8 +56,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Cookie"));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Set-Cookie"));
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

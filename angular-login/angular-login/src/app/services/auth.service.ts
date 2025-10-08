@@ -17,7 +17,9 @@ export class AuthService {
    * @returns Observable with login response
    */
   login(loginRequest: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/api/auth/login`, loginRequest)
+    return this.http.post<LoginResponse>(`${this.apiUrl}/api/auth/login`, loginRequest, {
+      withCredentials: true // Include cookies/session for cross-origin requests
+    })
       .pipe(
         map(response => response),
         catchError(error => {

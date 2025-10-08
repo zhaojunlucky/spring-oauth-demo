@@ -98,8 +98,11 @@ export class LoginComponent implements OnInit {
         this.isLoading = false;
 
         if (response.success) {
-          // Successful login, redirect back to OAuth client with code
-          this.authService.redirectToClient(true, response.code);
+          // Successful login, now redirect to OAuth2 authorize endpoint
+          // Add a small delay to ensure session is properly established
+          setTimeout(() => {
+            this.redirectToOAuth2Authorize();
+          }, 100);
         } else {
           // Login failed
           this.errorMessage = response.message || 'Authentication failed';
@@ -132,5 +135,29 @@ export class LoginComponent implements OnInit {
   // Cancel login and redirect back to client with error
   cancelLogin(): void {
     this.authService.redirectToClient(false, undefined, 'user_cancelled');
+  }
+
+  // Redirect to Spring OAuth2 authorize endpoint after successful authentication
+  private redirectToOAuth2Authorize(): void {
+    // Build the OAuth2 authorize URL with the original parameters
+    const baseUrl = 'http://localhost:8080/oauth2/authorize';
+    const params = new URLSearchParams({
+      client_id: this.oauthParams.client_id,
+      redirect_uri: this.oauthParams.redirect_uri,
+      response_type: this.oauthParams.response_type || 'code',
+      scope: this.oauthParams.scope || 'openid read write',
+      state: this.oauthParams.state || '',
+      code_challenge: this.oauthParams['code_challenge'] || '',
+      code_challenge_method: this.oauthParams['code_challenge_method'] || 'S256'
+    });
+
+    const authorizeUrl = `${baseUrl}?${params.toString()}`;
+    
+    console.log('Redirecting to OAuth2 authorize endpoint:', authorizeUrl);
+    
+    // Redirect to Spring's OAuth2 authorize endpoint
+    // Since the user is already authenticated in this session,
+    // Spring should generate the authorization code and redirect back
+    window.location.href = authorizeUrl;
   }
 }

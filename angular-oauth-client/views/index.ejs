@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Client - Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .user-info {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .token-info {
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 0.9em;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100px;
+    }
+    .spinner-border {
+      width: 3rem; 
+      height: 3rem;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/header') %>
+  
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-8 offset-md-2">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="text-center">Welcome to OAuth Client</h2>
+          </div>
+          <div class="card-body">
+            <% if (user) { %>
+              <div class="alert alert-success">
+                <h4 class="alert-heading">Authentication Successful!</h4>
+                <p>You are now logged in with the following details:</p>
+              </div>
+              
+              <div class="user-info">
+                <h4>User Information</h4>
+                <hr>
+                <p><strong>Name:</strong> <%= user.name || 'N/A' %></p>
+                <p><strong>Email:</strong> <%= user.email || 'N/A' %></p>
+                <p><strong>Username:</strong> <%= user.username || 'N/A' %></p>
+                <p><strong>Roles:</strong> <%= user.roles ? user.roles.join(', ') : 'N/A' %></p>
+              </div>
+              
+              <div class="token-info mt-4">
+                <h5>Access Token:</h5>
+                <div class="mb-3">
+                  <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#accessToken">
+                    Show/Hide Token
+                  </button>
+                  <div class="collapse" id="accessToken">
+                    <div class="mt-2 p-2 bg-white rounded">
+                      <%= token.access_token %>
+                    </div>
+                  </div>
+                </div>
+                
+                <h5>Refresh Token:</h5>
+                <div class="mb-3">
+                  <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#refreshToken">
+                    Show/Hide Token
+                  </button>
+                  <div class="collapse" id="refreshToken">
+                    <div class="mt-2 p-2 bg-white rounded">
+                      <%= token.refresh_token %>
+                    </div>
+                  </div>
+                </div>
+                
+                <p><strong>Expires In:</strong> <%= token.expires_in %> seconds</p>
+                <p><strong>Token Type:</strong> <%= token.token_type %></p>
+                <% if (token.scope) { %>
+                  <p><strong>Scope:</strong> <%= token.scope %></p>
+                <% } %>
+              </div>
+              
+              <div class="mt-4 d-grid gap-2">
+                <a href="/api/user/me" class="btn btn-primary" id="getUserInfo">
+                  <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                  Get User Info
+                </a>
+                <a href="/logout" class="btn btn-danger">Logout</a>
+              </div>
+              
+              <div id="apiResponse" class="mt-4"></div>
+              
+            <% } else { %>
+              <div class="text-center">
+                <p>You are not logged in. Please log in to continue.</p>
+                <a href="/login" class="btn btn-primary">Login</a>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Handle API calls
+    document.addEventListener('DOMContentLoaded', function() {
+      const getUserInfoBtn = document.getElementById('getUserInfo');
+      const apiResponseDiv = document.getElementById('apiResponse');
+      
+      if (getUserInfoBtn) {
+        getUserInfoBtn.addEventListener('click', async function(e) {
+          e.preventDefault();
+          
+          const spinner = this.querySelector('.spinner-border');
+          const originalText = this.innerHTML;
+          
+          try {
+            // Show loading state
+            this.disabled = true;
+            spinner.classList.remove('d-none');
+            apiResponseDiv.innerHTML = '';
+            
+            // Make API call
+            const response = await fetch('/api/user/me', {
+              headers: {
+                'Accept': 'application/json'
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to fetch user info');
+            }
+            
+            // Display response
+            apiResponseDiv.innerHTML = `
+              <div class="alert alert-success">
+                <h5>API Response:</h5>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+              </div>
+            `;
+            
+          } catch (error) {
+            console.error('Error:', error);
+            apiResponseDiv.innerHTML = `
+              <div class="alert alert-danger">
+                <h5>Error:</h5>
+                <p>${error.message}</p>
+              </div>
+            `;
+          } finally {
+            // Reset button state
+            this.disabled = false;
+            spinner.classList.add('d-none');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
